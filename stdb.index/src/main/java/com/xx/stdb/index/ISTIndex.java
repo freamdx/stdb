@@ -8,8 +8,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 
-import com.xx.stdb.index.IndexEnums.IndexLevel;
-
 /**
  * @author dux(duxionggis@126.com)
  */
@@ -21,12 +19,11 @@ public interface ISTIndex {
 	}
 
 	/**
-	 * set IndexLevel
+	 * get index precision
 	 * 
-	 * @param level
-	 *            IndexLevel
+	 * @return IndexPrecision
 	 */
-	void setLevel(IndexLevel level);
+	IndexPrecision getPrecision();
 
 	/**
 	 * create spatio-temporal index code by coordinate
@@ -34,24 +31,24 @@ public interface ISTIndex {
 	 * @param coord
 	 *            Coordinate
 	 * @param date
-	 *            Date
+	 *            Date, if null then code is geohash or hilbert token
 	 * @return String
 	 */
 	String encode(Coordinate coord, Date date);
 
 	/**
-	 * create spatio-temporal index code list by geometry
+	 * create spatio-temporal index codes by geometry and date
 	 * 
 	 * @param geometry
 	 *            Geometry
 	 * @param date
-	 *            Date
+	 *            Date, if null then code is geohash or hilbert token
 	 * @return Set<String>
 	 */
 	Set<String> encodes(Geometry geometry, Date date);
 
 	/**
-	 * get spatio-temporal index code's envelope
+	 * get spatio-temporal index code's around polygon
 	 * 
 	 * @param code
 	 *            String, geohash or hilbert token

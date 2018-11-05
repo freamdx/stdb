@@ -54,7 +54,7 @@ public class STIndexTest {
 
 		System.out.println(IndexType.HILBERT + " " + IndexLevel.LOW);
 		indexer = STIndexer.createIndexer(IndexType.HILBERT, IndexLevel.LOW);
-		print(date, coord, point, line, poly, mpoint, indexer);
+		print(null, coord, point, line, poly, mpoint, indexer);
 		System.out.println();
 		stiStrs.add("_" + indexer.toString().toLowerCase() + "_");
 		stiIdxs.add(indexer);
@@ -75,7 +75,7 @@ public class STIndexTest {
 
 		System.out.println(IndexType.ZORDER + " " + IndexLevel.LOW);
 		indexer = STIndexer.createIndexer(IndexType.ZORDER, IndexLevel.LOW);
-		print(date, coord, point, line, poly, mpoint, indexer);
+		print(null, coord, point, line, poly, mpoint, indexer);
 		System.out.println();
 		stiStrs.add("_" + indexer.toString().toLowerCase() + "_");
 		stiIdxs.add(indexer);
@@ -91,11 +91,12 @@ public class STIndexTest {
 			MultiPoint mpoint, ISTIndex indexer) {
 		String code = indexer.encode(coord, date);
 		System.out.println(coord + " -- " + code);
-		System.out.println(code + " -- " + indexer.decode(code.substring(0, code.indexOf("2018"))));
+		code = code.indexOf("2018") > 0 ? code.substring(0, code.indexOf("2018")) : code;
+		System.out.println(code + " -- " + indexer.decode(code));
 		Set<String> codes = indexer.encodes(line, date);
 		System.out.println(line + " -- " + codes.size() + " -- " + codes);
-		// codes = indexer.encodes(poly, date);
-		// System.out.println(poly + " -- " + codes.size() + " -- " + codes);
+		codes = indexer.encodes(poly, date);
+		System.out.println(poly + " -- " + codes.size() + " -- " + codes);
 		codes = indexer.encodes(mpoint, date);
 		System.out.println(mpoint + " -- " + codes.size() + " -- " + codes);
 		codes = indexer.encodes(point, date);

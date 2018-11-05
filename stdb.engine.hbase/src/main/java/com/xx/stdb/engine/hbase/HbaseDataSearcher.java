@@ -1,8 +1,11 @@
 package com.xx.stdb.engine.hbase;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -11,6 +14,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.RegexStringComparator;
+import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import com.xx.stdb.base.KryoSerialization;
 import com.xx.stdb.base.feature.Feature;
@@ -22,6 +29,7 @@ import com.xx.stdb.engine.EngineException;
 import com.xx.stdb.engine.IDataSearcher;
 import com.xx.stdb.engine.STFilter;
 import com.xx.stdb.engine.hbase.util.EHConstants;
+import com.xx.stdb.engine.hbase.util.RowRegexUtil;
 import com.xx.stdb.engine.hbase.util.HbaseWrapper;
 import com.xx.stdb.index.ISTIndex;
 import com.xx.stdb.index.STIndexer;
@@ -65,22 +73,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 			if (result == null || result.isEmpty()) {
 				throw new EngineException("get feature null");
 			}
-
-			byte[] bytes = result.getValue(EHConstants.DEF_COL_FAMILY_B, EHConstants.DEF_COL_CELL_B);
-			Feature f;
-			if (EHConstants.KRYO_USED) {
-				SimpleFeature sf = kryo.deserialize(bytes);
-				f = FeatureWrapper.fromSimple(schema, sf);
-				f.setGeometry(GeoTransfer.fromGeoHash(sf.getWkt()));
-			} else {
-				f = FeatureWrapper.fromBytes(schema, bytes, EHConstants.FID_BUFFERED);
-				f.setGeometry(GeoTransfer.fromGeoHash(f.getGeometryCode()));
-				f.setGeometryCode(null);
-				if (!EHConstants.FID_BUFFERED) {
-					f.setFid(EHConstants.getFid(Bytes.toString(result.getRow())));
-				}
-			}
-			return f;
+			return buildFeature(result);
 		} catch (IOException e) {
 			throw new EngineException("get feature by fid error:", e);
 		}
@@ -109,24 +102,10 @@ public class HbaseDataSearcher implements IDataSearcher {
 				if (result == null || result.isEmpty()) {
 					continue;
 				}
-				byte[] bytes = result.getValue(EHConstants.DEF_COL_FAMILY_B, EHConstants.DEF_COL_CELL_B);
-				Feature f;
-				if (EHConstants.KRYO_USED) {
-					SimpleFeature sf = kryo.deserialize(bytes);
-					f = FeatureWrapper.fromSimple(schema, sf);
-					f.setGeometry(GeoTransfer.fromGeoHash(sf.getWkt()));
-				} else {
-					f = FeatureWrapper.fromBytes(schema, bytes, EHConstants.FID_BUFFERED);
-					f.setGeometry(GeoTransfer.fromGeoHash(f.getGeometryCode()));
-					f.setGeometryCode(null);
-					if (!EHConstants.FID_BUFFERED) {
-						f.setFid(EHConstants.getFid(Bytes.toString(result.getRow())));
-					}
-				}
-				features.add(f);
+				features.add(buildFeature(result));
 			}
 			if (features.isEmpty()) {
-				throw new EngineException("get features null after Resolving");
+				throw new EngineException("get features null after resolving");
 			}
 			return features;
 		} catch (IOException e) {
@@ -149,9 +128,25 @@ public class HbaseDataSearcher implements IDataSearcher {
 	}
 
 	@Override
-	public FeatureIterator spatioTemporalQuery(STFilter filter) throws EngineException {
+	public Set<Feature> spatioTemporalQuery(STFilter filter) throws EngineException {
 		if (collectionSTI.isEmpty() || indexers.isEmpty()) {
 			throw new EngineException("not found ISTIndex before spatio-temporal query");
+		}
+		if (filter == null) {
+			throw new IllegalArgumentException("parameter filter is null");
+		}
+		if (filter.getGeometry() == null || filter.getGeometry().isEmpty()) {
+			throw new IllegalArgumentException("filter.getGeometry is null or empty");
+		}
+		Date dateFrom = filter.getDateFrom();
+		Date dateTo = filter.getDateTo();
+		if (dateTo != null && dateFrom != null) {
+			if (dateTo.before(dateFrom)) {
+				throw new IllegalArgumentException("filter's dateTo is before dateFrom");
+			}
+			if (((dateTo.getTime() - dateFrom.getTime()) / 86400000) > EHConstants.LIMIT_FILTER_DAYS) {
+				throw new IllegalArgumentException("filter's date subtraction exceeded the default value");
+			}
 		}
 
 		int idx = 0; // the best index
@@ -159,25 +154,67 @@ public class HbaseDataSearcher implements IDataSearcher {
 		try {
 			Table table = hbase.getTable(collectionSTI.get(idx));
 			ResultScanner scanner = table.getScanner(scan);
-			return new HbaseFeatureIterator(kryo, schema, table, scanner);
+			Set<Feature> fSet = new HashSet<>();
+			Result result;
+			Feature feature;
+			Date date;
+			while (fSet.size() < EHConstants.LIMIT_SCAN_SIZE && (result = scanner.next()) != null) {
+				if (result.isEmpty()) {
+					continue;
+				}
+
+				// filter by date and geometry
+				feature = buildFeature(result);
+				date = feature.firstIndexedDateAttrib();
+				boolean contains = true;
+				if (dateFrom != null && dateTo != null && date != null) {
+					contains = (dateTo.getTime() - date.getTime()) >= 0 && (date.getTime() - dateFrom.getTime()) >= 0;
+				}
+				if (contains && filter.getGeometry().intersects(feature.getGeometry())) {
+					fSet.add(feature);
+				}
+			}
+			return fSet;
 		} catch (IOException e) {
 			throw new EngineException("spatio-temporal query error:", e);
 		}
 	}
 
-	private Scan buildScan(STFilter stiFilter, ISTIndex indexer) throws EngineException {
-		if (stiFilter == null) {
-			throw new IllegalArgumentException("parameter filter is null");
-		}
-		if (stiFilter.getGeometry() == null || stiFilter.getGeometry().isEmpty()) {
-			throw new IllegalArgumentException("filter.getGeometry is null or empty");
-		}
+	private Scan buildScan(STFilter stiFilter, ISTIndex indexer) {
+		Set<String> codes = indexer.encodes(stiFilter.getGeometry(), null);
+		SimpleDateFormat format = indexer.getPrecision().getDateFormat();
+		Date from = stiFilter.getDateFrom();
+		Date to = stiFilter.getDateTo();
+		String regexStr = RowRegexUtil.regex(codes, stiFilter.getFids(), from, to, format);
 
 		Scan scan = new Scan();
 		scan.setMaxVersions();
 		scan.setRaw(true);
-		// TODO
+		scan.setCaching(EHConstants.LIMIT_SCAN_SIZE / 2);
+		scan.setBatch(EHConstants.LIMIT_SCAN_SIZE);
+
+		RegexStringComparator comparator = new RegexStringComparator(regexStr);
+		Filter filter = new RowFilter(CompareOp.EQUAL, comparator);
+		scan.setFilter(filter);
 		return scan;
+	}
+
+	private Feature buildFeature(Result result) {
+		byte[] bytes = result.getValue(EHConstants.DEF_COL_FAMILY_B, EHConstants.DEF_COL_CELL_B);
+		Feature f;
+		if (EHConstants.KRYO_USED) {
+			SimpleFeature sf = kryo.deserialize(bytes);
+			f = FeatureWrapper.fromSimple(schema, sf);
+			f.setGeometry(GeoTransfer.fromGeoHash(sf.getWkt()));
+		} else {
+			f = FeatureWrapper.fromBytes(schema, bytes, EHConstants.FID_BUFFERED);
+			f.setGeometry(GeoTransfer.fromGeoHash(f.getGeometryCode()));
+			f.setGeometryCode(null);
+			if (!EHConstants.FID_BUFFERED) {
+				f.setFid(EHConstants.getFid(Bytes.toString(result.getRow())));
+			}
+		}
+		return f;
 	}
 
 }

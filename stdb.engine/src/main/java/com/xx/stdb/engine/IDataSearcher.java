@@ -44,9 +44,9 @@ public interface IDataSearcher {
 	 * 
 	 * @param filter
 	 *            STFilter
-	 * @return FeatureIterator
+	 * @return Set<Feature>
 	 * @throws EngineException
 	 */
-	FeatureIterator spatioTemporalQuery(STFilter filter) throws EngineException;
+	Set<Feature> spatioTemporalQuery(STFilter filter) throws EngineException;
 
 }

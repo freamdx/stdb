@@ -10,6 +10,6 @@ public class Constants {
 	}
 
 	public static final Charset DEF_CHARSET = Charset.forName("UTF-8");
-	public static int DEF_BUFFER_SIZE = 4096; // allow change size
+	public static int DEF_BUFFER_SIZE = 1024; // allow change size
 
 }

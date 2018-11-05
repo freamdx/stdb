@@ -177,6 +177,7 @@ public class HbaseDataStore implements IDataStore {
 
 		// rebuild properties
 		Date date = feature.firstIndexedDateAttrib();
+		date = date == null ? STIConstants.defaultDate() : date;
 		if (indexers.isEmpty()) {
 			buildIndexers();
 		}

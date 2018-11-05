@@ -32,6 +32,9 @@ public class EHConstants {
 	public static final boolean KRYO_USED = false; // self bytes is smaller
 	public static final boolean FID_BUFFERED = false; // rowkey contains fid
 
+	public static final int LIMIT_FILTER_DAYS = 365; // only 1 year
+	public static final int LIMIT_ROWKEY_SIZE = 12; // 12 grids or months
+
 	public static int LIMIT_SCAN_SIZE = 1024; // allow change size
 
 	/**

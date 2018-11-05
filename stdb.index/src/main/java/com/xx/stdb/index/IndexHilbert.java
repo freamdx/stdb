@@ -35,11 +35,8 @@ public class IndexHilbert implements ISTIndex {
 	}
 
 	@Override
-	public void setLevel(IndexLevel level) {
-		if (level != null) {
-			this.indexLevel = level;
-			this.indexPrec = IndexPrecision.getPrecision(TYPE, this.indexLevel);
-		}
+	public IndexPrecision getPrecision() {
+		return this.indexPrec;
 	}
 
 	@Override
@@ -103,6 +100,13 @@ public class IndexHilbert implements ISTIndex {
 
 	public String toString() {
 		return TYPE.name() + "_" + indexLevel.name();
+	}
+
+	private void setLevel(IndexLevel level) {
+		if (level != null) {
+			this.indexLevel = level;
+			this.indexPrec = IndexPrecision.getPrecision(TYPE, this.indexLevel);
+		}
 	}
 
 }

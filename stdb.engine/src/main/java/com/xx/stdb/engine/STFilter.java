@@ -50,7 +50,7 @@ public class STFilter {
 		return fids;
 	}
 
-	public void addFID(String fid) {
+	public void addFid(String fid) {
 		if (fid != null && !fid.isEmpty()) {
 			fids.add(fid);
 		}

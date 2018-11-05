@@ -42,7 +42,7 @@ public class HbaseFeatureIterator extends FeatureIterator {
 			try {
 				curResult = scanner.next();
 				++count;
-				return curResult != null && !curResult.isEmpty();
+				return curResult != null;
 			} catch (IOException e) {
 				// TODO log
 			}

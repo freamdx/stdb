@@ -1,6 +1,8 @@
 package com.xx.stdb.index.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.xx.stdb.index.IndexZOrder;
 import com.xx.stdb.index.IndexEnums.IndexType;
@@ -10,16 +12,21 @@ import com.xx.stdb.index.IndexHilbert;
  * @author dux(duxionggis@126.com)
  */
 public class STIConstants {
+	private static Date defDate;
+
 	private STIConstants() {
 	}
 
-	public static final SimpleDateFormat SDF_HIGH = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-	public static final SimpleDateFormat SDF_MID = new SimpleDateFormat("yyyyMMddHHmmss");
-	public static final SimpleDateFormat SDF_LOW = new SimpleDateFormat("yyyyMMddHHmm");
+	public static final SimpleDateFormat SDF_MILLIS = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+	public static final SimpleDateFormat SDF_SECOND = new SimpleDateFormat("yyyyMMddHHmmss");
+	public static final SimpleDateFormat SDF_MINUTE = new SimpleDateFormat("yyyyMMddHHmm");
+	public static final SimpleDateFormat SDF_HOUR = new SimpleDateFormat("yyyyMMddHH");
+	public static final SimpleDateFormat SDF_DAY = new SimpleDateFormat("yyyyMMdd");
+	public static final SimpleDateFormat SDF_MONTH = new SimpleDateFormat("yyyyMM");
 
-	public static final String DATE_HIGH = "19700101080000000";
-	public static final String DATE_MID = "19700101080000";
-	public static final String DATE_LOW = "197001010800";
+	public static final SimpleDateFormat SDF_HIGH = SDF_MILLIS;
+	public static final SimpleDateFormat SDF_MID = SDF_SECOND;
+	public static final SimpleDateFormat SDF_LOW = SDF_MINUTE;
 
 	public static final double INTERVAL_HIGH = 1.0e-5;
 	public static final double INTERVAL_MID = 2.0e-5;
@@ -32,6 +39,18 @@ public class STIConstants {
 	public static final int HILBERT_PREC_HIGH = 30;
 	public static final int HILBERT_PREC_MID = 28;
 	public static final int HILBERT_PREC_LOW = 11;
+
+	static {
+		try {
+			defDate = SDF_HIGH.parse("19700101080000000");
+		} catch (ParseException e) {
+			// TODO log
+		}
+	}
+
+	public static Date defaultDate() {
+		return defDate;
+	}
 
 	public static String getVersion(IndexType type) {
 		if (type == IndexType.ZORDER) {
