@@ -73,4 +73,8 @@ public class STIConstants {
 		return token + date; // TODO new alg
 	}
 
+	public static String getDate(String code, int dateLen) {
+		return code.substring(code.length() - dateLen); // TODO new alg
+	}
+
 }

@@ -80,9 +80,13 @@ public class SearcherTest {
 
 		System.out.println("----------fids null------------");
 		Date date1 = STIConstants.SDF_HIGH.parse("20181103070101001");
-		Date date2 = STIConstants.SDF_HIGH.parse("20181105175959999");
+		Date date2 = STIConstants.SDF_HIGH.parse("20181103175959999");
 		stfilter = new STFilter(geo, date1, date2);
-		// stfilter.addFid("50");
+		queryResolve(searcher, stfilter);
+
+		System.out.println("----------date and fids not null------------");
+		stfilter = new STFilter(geo, date1, date2);
+		stfilter.addFid("50");
 		queryResolve(searcher, stfilter);
 
 		dataStore.destroy();

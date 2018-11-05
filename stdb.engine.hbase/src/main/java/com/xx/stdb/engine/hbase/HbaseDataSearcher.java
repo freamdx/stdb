@@ -1,6 +1,7 @@
 package com.xx.stdb.engine.hbase;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import com.xx.stdb.engine.hbase.util.HbaseWrapper;
 import com.xx.stdb.index.ISTIndex;
 import com.xx.stdb.index.STIndexer;
 import com.xx.stdb.index.util.GeoTransfer;
+import com.xx.stdb.index.util.STIConstants;
 
 /**
  * @author dux(duxionggis@126.com)
@@ -150,6 +152,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 		}
 
 		int idx = 0; // the best index
+		int dateLen = indexers.get(idx).getPrecision().getDateStr(STIConstants.defaultDate()).length();
 		Scan scan = buildScan(filter, indexers.get(idx));
 		try {
 			Table table = hbase.getTable(collectionSTI.get(idx));
@@ -163,12 +166,26 @@ public class HbaseDataSearcher implements IDataSearcher {
 					continue;
 				}
 
+				// filter by rowkey date
+				if (dateFrom != null && dateTo != null) {
+					String code = EHConstants.getSTCode(Bytes.toString(result.getRow()));
+					String dateKey = STIConstants.getDate(code, dateLen);
+					try {
+						date = indexers.get(idx).getPrecision().getDateFormat().parse(dateKey);
+						if (date != null && (date.before(dateFrom) || date.after(dateTo))) {
+							continue;
+						}
+					} catch (ParseException e) {
+						// TODO log
+					}
+				}
+
 				// filter by date and geometry
 				feature = buildFeature(result);
 				date = feature.firstIndexedDateAttrib();
 				boolean contains = true;
 				if (dateFrom != null && dateTo != null && date != null) {
-					contains = (dateTo.getTime() - date.getTime()) >= 0 && (date.getTime() - dateFrom.getTime()) >= 0;
+					contains = !(date.before(dateFrom) || date.after(dateTo));
 				}
 				if (contains && filter.getGeometry().intersects(feature.getGeometry())) {
 					fSet.add(feature);
