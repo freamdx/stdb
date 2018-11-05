@@ -32,48 +32,28 @@ public class GeoTransfer {
 	 * @return Geometry
 	 */
 	public static Geometry fromGeoHash(String hash) {
-		if (hash == null || hash.isEmpty())
+		if (hash == null || hash.isEmpty()) {
 			return null;
+		}
 
-		GeoHash gh;
-		double lon;
-		double lat;
 		String gtype = hash.substring(0, 2);
 		hash = hash.substring(2);
 		if (gtype.equals(GeoType.OP.name())) {
-			gh = GeoHash.fromGeohashString(hash);
-			lon = format(gh.getPoint().getLongitude());
-			lat = format(gh.getPoint().getLatitude());
+			GeoHash gh = GeoHash.fromGeohashString(hash);
+			double lon = format(gh.getPoint().getLongitude());
+			double lat = format(gh.getPoint().getLatitude());
 			return GF.createPoint(new Coordinate(lon, lat));
 		} else if (gtype.equals(GeoType.MP.name())) {
-			Coordinate[] coords = new Coordinate[hash.length() / PREC];
-			for (int i = 0; i < coords.length; i++) {
-				gh = GeoHash.fromGeohashString(hash.substring(i * PREC, (i + 1) * PREC));
-				lon = format(gh.getPoint().getLongitude());
-				lat = format(gh.getPoint().getLatitude());
-				coords[i] = new Coordinate(lon, lat);
-			}
+			Coordinate[] coords = createCoords(hash);
 			return GF.createMultiPointFromCoords(coords);
 		} else if (gtype.equals(GeoType.OL.name())) {
-			Coordinate[] coords = new Coordinate[hash.length() / PREC];
-			for (int i = 0; i < coords.length; i++) {
-				gh = GeoHash.fromGeohashString(hash.substring(i * PREC, (i + 1) * PREC));
-				lon = format(gh.getPoint().getLongitude());
-				lat = format(gh.getPoint().getLatitude());
-				coords[i] = new Coordinate(lon, lat);
-			}
+			Coordinate[] coords = createCoords(hash);
 			return GF.createLineString(coords);
 		} else if (gtype.equals(GeoType.ML.name())) {
 			String[] hashs = StringUtil.split(hash, ";");
 			LineString[] lines = new LineString[hashs.length];
 			for (int k = 0; k < hashs.length; k++) {
-				Coordinate[] coords = new Coordinate[hashs[k].length() / PREC];
-				for (int i = 0; i < coords.length; i++) {
-					gh = GeoHash.fromGeohashString(hashs[k].substring(i * PREC, (i + 1) * PREC));
-					lon = format(gh.getPoint().getLongitude());
-					lat = format(gh.getPoint().getLatitude());
-					coords[i] = new Coordinate(lon, lat);
-				}
+				Coordinate[] coords = createCoords(hashs[k]);
 				lines[k] = GF.createLineString(coords);
 			}
 			return GF.createMultiLineString(lines);
@@ -82,13 +62,7 @@ public class GeoTransfer {
 			LinearRing shell = null;
 			LinearRing[] holes = new LinearRing[hashs.length - 1];
 			for (int k = 0; k < hashs.length; k++) {
-				Coordinate[] coords = new Coordinate[hashs[k].length() / PREC];
-				for (int i = 0; i < coords.length; i++) {
-					gh = GeoHash.fromGeohashString(hashs[k].substring(i * PREC, (i + 1) * PREC));
-					lon = format(gh.getPoint().getLongitude());
-					lat = format(gh.getPoint().getLatitude());
-					coords[i] = new Coordinate(lon, lat);
-				}
+				Coordinate[] coords = createCoords(hashs[k]);
 				coords[coords.length - 1] = coords[0];
 				if (k == 0) {
 					shell = GF.createLinearRing(coords);
@@ -105,13 +79,7 @@ public class GeoTransfer {
 				LinearRing shell = null;
 				LinearRing[] holes = new LinearRing[hashs.length - 1];
 				for (int k = 0; k < hashs.length; k++) {
-					Coordinate[] coords = new Coordinate[hashs[k].length() / PREC];
-					for (int i = 0; i < coords.length; i++) {
-						gh = GeoHash.fromGeohashString(hashs[k].substring(i * PREC, (i + 1) * PREC));
-						lon = format(gh.getPoint().getLongitude());
-						lat = format(gh.getPoint().getLatitude());
-						coords[i] = new Coordinate(lon, lat);
-					}
+					Coordinate[] coords = createCoords(hashs[k]);
 					coords[coords.length - 1] = coords[0];
 					if (k == 0) {
 						shell = GF.createLinearRing(coords);
@@ -134,8 +102,9 @@ public class GeoTransfer {
 	 * @return String
 	 */
 	public static String toGeoHash(Geometry geo) {
-		if (geo == null || geo.isEmpty())
+		if (geo == null || geo.isEmpty()) {
 			return "";
+		}
 
 		StringBuilder sb = new StringBuilder();
 		String gType = geo.getGeometryType();
@@ -211,6 +180,20 @@ public class GeoTransfer {
 			// TODO
 		}
 		return sb.toString();
+	}
+
+	private static Coordinate[] createCoords(String hash) {
+		GeoHash gh;
+		double lon;
+		double lat;
+		Coordinate[] coords = new Coordinate[hash.length() / PREC];
+		for (int i = 0; i < coords.length; i++) {
+			gh = GeoHash.fromGeohashString(hash.substring(i * PREC, (i + 1) * PREC));
+			lon = format(gh.getPoint().getLongitude());
+			lat = format(gh.getPoint().getLatitude());
+			coords[i] = new Coordinate(lon, lat);
+		}
+		return coords;
 	}
 
 	private static double format(double ll) {

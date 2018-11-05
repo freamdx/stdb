@@ -1,23 +1,34 @@
 package com.xx.stdb.index;
 
+import com.xx.stdb.index.IndexEnums.IndexLevel;
+import com.xx.stdb.index.IndexEnums.IndexType;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
-import com.xx.stdb.index.IndexEnums.IndexLevel;
-import com.xx.stdb.index.IndexEnums.IndexType;
 
 /**
  * @author dux(duxionggis@126.com)
  */
 public class STIndexer {
+	private static List<String> sources;
+
+	static {
+		sources = new ArrayList<>();
+		sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.LOW.name());
+		sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.LOW.name());
+		sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.MID.name());
+		sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.MID.name());
+		sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.HIGH.name());
+		sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.HIGH.name());
+	}
 
 	private STIndexer() {
 	}
 
 	/**
 	 * create indexer(IndexZOrder or IndexHilbert)
-	 * 
+	 *
 	 * @param type
 	 *            IndexType
 	 * @param level
@@ -33,18 +44,6 @@ public class STIndexer {
 	}
 
 	public static class STIComparator implements Comparator<String> {
-		private static List<String> sources;
-
-		static {
-			sources = new ArrayList<>();
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.LOW.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.LOW.name());
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.MID.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.MID.name());
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.HIGH.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.HIGH.name());
-		}
-
 		@Override
 		public int compare(String sti1, String sti2) {
 			int idx1 = getIndex(sti1.toUpperCase());
@@ -69,18 +68,6 @@ public class STIndexer {
 	}
 
 	public static class STIndexComparator implements Comparator<ISTIndex> {
-		private static List<String> sources;
-
-		static {
-			sources = new ArrayList<>();
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.LOW.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.LOW.name());
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.MID.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.MID.name());
-			sources.add(IndexType.ZORDER.name() + "_" + IndexLevel.HIGH.name());
-			sources.add(IndexType.HILBERT.name() + "_" + IndexLevel.HIGH.name());
-		}
-
 		@Override
 		public int compare(ISTIndex sti1, ISTIndex sti2) {
 			int idx1 = sources.indexOf(sti1.toString());
@@ -91,7 +78,6 @@ public class STIndexer {
 				return -1;
 			}
 		}
-
 	}
 
 }

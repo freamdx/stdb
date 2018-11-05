@@ -1,41 +1,28 @@
 package com.xx.stdb.engine.hbase;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import com.xx.stdb.base.KryoSerialization;
+import com.xx.stdb.base.feature.*;
+import com.xx.stdb.engine.EngineException;
+import com.xx.stdb.engine.IDataSearcher;
+import com.xx.stdb.engine.STFilter;
+import com.xx.stdb.engine.hbase.util.EHConstants;
+import com.xx.stdb.engine.hbase.util.HbaseWrapper;
+import com.xx.stdb.engine.hbase.util.RowRegexUtil;
+import com.xx.stdb.index.ISTIndex;
+import com.xx.stdb.index.STIndexer;
+import com.xx.stdb.index.util.GeoTransfer;
+import com.xx.stdb.index.util.STIConstants;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.util.Bytes;
-import com.xx.stdb.base.KryoSerialization;
-import com.xx.stdb.base.feature.Feature;
-import com.xx.stdb.base.feature.FeatureIterator;
-import com.xx.stdb.base.feature.FeatureWrapper;
-import com.xx.stdb.base.feature.Schema;
-import com.xx.stdb.base.feature.SimpleFeature;
-import com.xx.stdb.engine.EngineException;
-import com.xx.stdb.engine.IDataSearcher;
-import com.xx.stdb.engine.STFilter;
-import com.xx.stdb.engine.hbase.util.EHConstants;
-import com.xx.stdb.engine.hbase.util.RowRegexUtil;
-import com.xx.stdb.engine.hbase.util.HbaseWrapper;
-import com.xx.stdb.index.ISTIndex;
-import com.xx.stdb.index.STIndexer;
-import com.xx.stdb.index.util.GeoTransfer;
-import com.xx.stdb.index.util.STIConstants;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * @author dux(duxionggis@126.com)
@@ -75,7 +62,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 			if (result == null || result.isEmpty()) {
 				throw new EngineException("get feature null");
 			}
-			return buildFeature(result);
+			return buildFeature(result, kryo, schema);
 		} catch (IOException e) {
 			throw new EngineException("get feature by fid error:", e);
 		}
@@ -104,7 +91,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 				if (result == null || result.isEmpty()) {
 					continue;
 				}
-				features.add(buildFeature(result));
+				features.add(buildFeature(result, kryo, schema));
 			}
 			if (features.isEmpty()) {
 				throw new EngineException("get features null after resolving");
@@ -181,7 +168,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 				}
 
 				// filter by date and geometry
-				feature = buildFeature(result);
+				feature = buildFeature(result, kryo, schema);
 				date = feature.firstIndexedDateAttrib();
 				boolean contains = true;
 				if (dateFrom != null && dateTo != null && date != null) {
@@ -216,7 +203,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 		return scan;
 	}
 
-	private Feature buildFeature(Result result) {
+	static Feature buildFeature(Result result, KryoSerialization kryo, Schema schema) {
 		byte[] bytes = result.getValue(EHConstants.DEF_COL_FAMILY_B, EHConstants.DEF_COL_CELL_B);
 		Feature f;
 		if (EHConstants.KRYO_USED) {
