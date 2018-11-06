@@ -41,24 +41,38 @@ public class FeatureWrapper {
 		feature.setGeometryCode(new String(input.readBytes(len), Constants.DEF_CHARSET));
 		if (fidBuffered) {
 			len = input.readInt();
-			feature.setFid(new String(input.readBytes(len), Constants.DEF_CHARSET));
+			String fid = new String(input.readBytes(len), Constants.DEF_CHARSET);
+			feature.setFid(fid.equals("null") ? null : fid);
 		}
+		byte bb;
+		int ii;
+		float ff;
+		long ll;
+		double dd;
+		String ss;
 		for (int i = 0; i < schema.getAttributeCount(); i++) {
 			if (schema.getAttributeType(i) == AttributeType.BOOLEAN) {
-				feature.setAttribute(i, input.readByte() == 1);
+				bb = input.readByte();
+				feature.setAttribute(i, bb == -1 ? null : bb == 1);
 			} else if (schema.getAttributeType(i) == AttributeType.INTEGER) {
-				feature.setAttribute(i, input.readInt());
+				ii = input.readInt();
+				feature.setAttribute(i, ii == Integer.MIN_VALUE ? null : ii);
 			} else if (schema.getAttributeType(i) == AttributeType.FLOAT) {
-				feature.setAttribute(i, input.readFloat());
+				ff = input.readFloat();
+				feature.setAttribute(i, ff == Float.NaN ? null : ff);
 			} else if (schema.getAttributeType(i) == AttributeType.LONG) {
-				feature.setAttribute(i, input.readLong());
+				ll = input.readLong();
+				feature.setAttribute(i, ll == Long.MIN_VALUE ? null : ll);
 			} else if (schema.getAttributeType(i) == AttributeType.DATE) {
-				feature.setAttribute(i, new Date(input.readLong()));
+				ll = input.readLong();
+				feature.setAttribute(i, ll == Long.MIN_VALUE ? null : new Date(ll));
 			} else if (schema.getAttributeType(i) == AttributeType.DOUBLE) {
-				feature.setAttribute(i, input.readDouble());
+				dd = input.readDouble();
+				feature.setAttribute(i, dd == Double.NaN ? null : dd);
 			} else {
 				len = input.readInt();
-				feature.setAttribute(i, new String(input.readBytes(len), Constants.DEF_CHARSET));
+				ss = new String(input.readBytes(len), Constants.DEF_CHARSET);
+				feature.setAttribute(i, ss.equals("null") ? null : ss);
 			}
 		}
 		input.close();
@@ -113,34 +127,34 @@ public class FeatureWrapper {
 		output.writeInt(byts.length);
 		output.writeBytes(byts);
 		if (fidBuffered) {
-			byts = feature.getFid().getBytes(Constants.DEF_CHARSET);
+			String fid = feature.getFid() == null ? "null" : feature.getFid();
+			byts = fid.getBytes(Constants.DEF_CHARSET);
 			output.writeInt(byts.length);
 			output.writeBytes(byts);
 		}
-		for (Object attrib : feature.getAttributes()) {
-			if (attrib instanceof Boolean) {
-				if ((boolean) attrib) {
-					output.writeByte(1);
-				} else {
-					output.writeByte(0);
-				}
-			} else if (attrib instanceof Integer) {
-				output.writeInt((int) attrib);
-			} else if (attrib instanceof Float) {
-				output.writeFloat((float) attrib);
-			} else if (attrib instanceof Long) {
-				output.writeLong((long) attrib);
-			} else if (attrib instanceof Date) {
-				output.writeLong(((Date) attrib).getTime());
-			} else if (attrib instanceof Double) {
-				output.writeDouble((double) attrib);
+		Object attrib;
+		String val;
+		for (int i = 0; i < feature.getSchema().getAttributeCount(); i++) {
+			attrib = feature.getAttribute(i);
+			if (feature.getSchema().getAttributeType(i) == AttributeType.BOOLEAN) {
+				output.writeByte(attrib == null ? -1 : ((boolean) attrib ? 1 : 0));
+			} else if (feature.getSchema().getAttributeType(i) == AttributeType.INTEGER) {
+				output.writeInt(attrib == null ? Integer.MIN_VALUE : (int) attrib);
+			} else if (feature.getSchema().getAttributeType(i) == AttributeType.FLOAT) {
+				output.writeFloat(attrib == null ? Float.NaN : (float) attrib);
+			} else if (feature.getSchema().getAttributeType(i) == AttributeType.LONG) {
+				output.writeLong(attrib == null ? Long.MIN_VALUE : (long) attrib);
+			} else if (feature.getSchema().getAttributeType(i) == AttributeType.DATE) {
+				output.writeLong(attrib == null ? Long.MIN_VALUE : ((Date) attrib).getTime());
+			} else if (feature.getSchema().getAttributeType(i) == AttributeType.DOUBLE) {
+				output.writeDouble(attrib == null ? Double.NaN : (double) attrib);
 			} else {
-				byts = attrib.toString().getBytes(Constants.DEF_CHARSET);
+				val = attrib == null ? "null" : attrib.toString();
+				byts = val.getBytes(Constants.DEF_CHARSET);
 				output.writeInt(byts.length);
 				output.writeBytes(byts);
 			}
 		}
-
 		byte[] bytes = output.toBytes();
 		output.close();
 		return bytes;

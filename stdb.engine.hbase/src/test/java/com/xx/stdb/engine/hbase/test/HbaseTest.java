@@ -51,7 +51,7 @@ public class HbaseTest {
 		scan.setMaxVersions();
 		scan.setRaw(true);
 		scan.setCaching(512);
-		scan.setBatch(10240);
+		scan.setBatch(1024);
 
 		FilterList filterList = new FilterList();
 		RegexStringComparator comparator = new RegexStringComparator("35f05294989.{4}2018110307[0-9]{4}:.+");

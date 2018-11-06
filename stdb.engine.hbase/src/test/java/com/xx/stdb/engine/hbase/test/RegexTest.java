@@ -30,7 +30,7 @@ public class RegexTest {
 		fids.add("3");
 
 		Date from = STIConstants.SDF_HIGH.parse("20180103011359001");
-		Date to = STIConstants.SDF_HIGH.parse("20180113111401999");
+		Date to = STIConstants.SDF_HIGH.parse("20180103111401999");
 
 		System.out.println(RowRegexUtil.regex(codes, null, null, null, STIConstants.SDF_MID));
 		System.out.println(RowRegexUtil.regex(codes, fids, null, null, STIConstants.SDF_MID));

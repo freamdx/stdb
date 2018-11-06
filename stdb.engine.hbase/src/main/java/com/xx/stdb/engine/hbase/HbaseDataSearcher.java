@@ -20,7 +20,6 @@ import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -129,7 +128,8 @@ public class HbaseDataSearcher implements IDataSearcher {
 		}
 		Date dateFrom = filter.getDateFrom();
 		Date dateTo = filter.getDateTo();
-		if (dateTo != null && dateFrom != null) {
+		boolean nonNull = dateTo != null && dateFrom != null;
+		if (nonNull) {
 			if (dateTo.before(dateFrom)) {
 				throw new IllegalArgumentException("filter's dateTo is before dateFrom");
 			}
@@ -137,66 +137,59 @@ public class HbaseDataSearcher implements IDataSearcher {
 				throw new IllegalArgumentException("filter's date subtraction exceeded the default value");
 			}
 		}
+		Set<Feature> fSet = new HashSet<>();
 
 		int idx = 0; // the best index
-		int dateLen = indexers.get(idx).getPrecision().getDateStr(STIConstants.defaultDate()).length();
-		Scan scan = buildScan(filter, indexers.get(idx));
+		ISTIndex indexer = indexers.get(idx);
+		Set<String> codes = indexer.encodes(filter.getGeometry(), null);
+		SimpleDateFormat sdf = indexer.getPrecision().getDateFormat();
+		int defLen = sdf.format(STIConstants.defaultDate()).length();
+		Scan scan = buildScan(codes, filter.getFids(), dateFrom, dateTo, sdf);
 		try {
 			Table table = hbase.getTable(collectionSTI.get(idx));
 			ResultScanner scanner = table.getScanner(scan);
-			Set<Feature> fSet = new HashSet<>();
+
 			Result result;
 			Feature feature;
 			Date date;
+			String code;
 			while (fSet.size() < EHConstants.LIMIT_SCAN_SIZE && (result = scanner.next()) != null) {
 				if (result.isEmpty()) {
 					continue;
 				}
-
-				// filter by rowkey date
-				if (dateFrom != null && dateTo != null) {
-					String code = EHConstants.getSTCode(Bytes.toString(result.getRow()));
-					String dateKey = STIConstants.getDate(code, dateLen);
-					try {
-						date = indexers.get(idx).getPrecision().getDateFormat().parse(dateKey);
-						if (date != null && (date.before(dateFrom) || date.after(dateTo))) {
-							continue;
-						}
-					} catch (ParseException e) {
-						// TODO log
-					}
+				// filter by rowkey spatial code (rowkey date is not available)
+				code = EHConstants.getSTCode(Bytes.toString(result.getRow()));
+				if (!codes.contains(STIConstants.getToken(code, defLen))) {
+					continue;
 				}
 
-				// filter by date and geometry
+				// filter by feature date and geometry
 				feature = buildFeature(result, kryo, schema);
 				date = feature.firstIndexedDateAttrib();
 				boolean contains = true;
-				if (dateFrom != null && dateTo != null && date != null) {
+				if (nonNull && date != null) {
 					contains = !(date.before(dateFrom) || date.after(dateTo));
 				}
 				if (contains && filter.getGeometry().intersects(feature.getGeometry())) {
 					fSet.add(feature);
 				}
 			}
-			return fSet;
+			scanner.close();
+			table.close();
 		} catch (IOException e) {
 			throw new EngineException("spatio-temporal query error:", e);
 		}
+		return fSet;
 	}
 
-	private Scan buildScan(STFilter stiFilter, ISTIndex indexer) {
-		Set<String> codes = indexer.encodes(stiFilter.getGeometry(), null);
-		SimpleDateFormat format = indexer.getPrecision().getDateFormat();
-		Date from = stiFilter.getDateFrom();
-		Date to = stiFilter.getDateTo();
-		String regexStr = RowRegexUtil.regex(codes, stiFilter.getFids(), from, to, format);
-
+	private Scan buildScan(Set<String> codes, Set<String> fids, Date from, Date to, SimpleDateFormat sdf) {
 		Scan scan = new Scan();
 		scan.setMaxVersions();
 		scan.setRaw(true);
 		scan.setCaching(EHConstants.LIMIT_SCAN_SIZE / 2);
 		scan.setBatch(EHConstants.LIMIT_SCAN_SIZE);
 
+		String regexStr = RowRegexUtil.regex(codes, fids, from, to, sdf);
 		RegexStringComparator comparator = new RegexStringComparator(regexStr);
 		Filter filter = new RowFilter(CompareOp.EQUAL, comparator);
 		scan.setFilter(filter);

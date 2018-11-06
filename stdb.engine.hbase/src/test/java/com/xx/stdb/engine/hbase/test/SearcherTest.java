@@ -73,18 +73,17 @@ public class SearcherTest {
 
 		System.out.println("----------date null------------");
 		stfilter = new STFilter(geo, null, null);
-		stfilter.addFid("40");
 		stfilter.addFid("50");
 		stfilter.addFid("60000");
 		queryResolve(searcher, stfilter);
 
 		System.out.println("----------fids null------------");
 		Date date1 = STIConstants.SDF_HIGH.parse("20181103070101001");
-		Date date2 = STIConstants.SDF_HIGH.parse("20181103175959999");
+		Date date2 = STIConstants.SDF_HIGH.parse("20181106175959999");
 		stfilter = new STFilter(geo, date1, date2);
 		queryResolve(searcher, stfilter);
 
-		System.out.println("----------date and fids not null------------");
+		System.out.println("----------date and fids------------");
 		stfilter = new STFilter(geo, date1, date2);
 		stfilter.addFid("50");
 		queryResolve(searcher, stfilter);

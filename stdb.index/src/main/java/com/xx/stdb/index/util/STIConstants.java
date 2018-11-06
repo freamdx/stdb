@@ -70,11 +70,15 @@ public class STIConstants {
 	 * @return String
 	 */
 	public static String getCode(String token, String date) {
-		return token + date; // TODO new alg
+		return token + date; // instead of new alg
 	}
 
 	public static String getDate(String code, int dateLen) {
-		return code.substring(code.length() - dateLen); // TODO new alg
+		return code.substring(code.length() - dateLen);
+	}
+
+	public static String getToken(String code, int dateLen) {
+		return code.substring(0, code.length() - dateLen);
 	}
 
 }

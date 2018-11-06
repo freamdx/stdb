@@ -35,10 +35,10 @@ public class FeatureTest {
 
 		System.out.println("-------- feature --------");
 		Feature f = new Feature(s, "1");
-		f.setAttribute("ID", "1");
+		f.setAttribute("ID", null);
 		f.setAttribute("BOOL", true);
 		f.setAttribute("INT", 11);
-		f.setAttribute("FLA", 11.1F);
+		f.setAttribute("FLA", null);
 		f.setAttribute("LON", 11111111111L);
 		f.setAttribute("DOU", 11.1111);
 		f.setAttribute("DTG", new Date());

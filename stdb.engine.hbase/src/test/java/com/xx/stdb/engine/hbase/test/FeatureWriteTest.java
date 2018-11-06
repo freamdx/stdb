@@ -36,6 +36,7 @@ public class FeatureWriteTest {
 			f.setAttribute("FLA", 11.1F);
 			f.setAttribute("LON", 11111111111L);
 			f.setAttribute("DOU", 11.1111);
+			// f.setAttribute("DTG", null);
 			f.setAttribute("DTG", new Date());
 			Coordinate[] coords = new Coordinate[2];
 			coords[0] = new Coordinate(116.39, 39.91);

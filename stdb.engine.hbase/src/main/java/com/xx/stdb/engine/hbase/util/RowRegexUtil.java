@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * @author dux(duxionggis @ 126.com)
+ * @author dux(duxionggis@126.com)
  */
 public class RowRegexUtil {
 	private RowRegexUtil() {
@@ -24,21 +24,21 @@ public class RowRegexUtil {
 			return "";
 		}
 
-		StringBuilder sb = new StringBuilder();
-		if (codes.size() <= EHConstants.LIMIT_ROWKEY_SIZE) {
-			sb.append("(");
-			codes.forEach(v -> sb.append(v).append("|"));
-			sb.delete(sb.length() - 1, sb.length());
-			sb.append(")");
-		} else {
-			int len = codes.iterator().next().length();
-			Set<String> codeSet = regexCodes(codes, len - 1);
-			int num = len - codeSet.iterator().next().length();
-			sb.append("(");
-			codeSet.forEach(v -> sb.append(v + "[0-9a-z]{" + num + "}").append("|"));
-			sb.delete(sb.length() - 1, sb.length());
-			sb.append(")");
+		int len = codes.iterator().next().length();
+		if (codes.size() > EHConstants.LIMIT_ROWKEY_SIZE) {
+			codes = regexCodes(codes, len - 1);
 		}
+		int num = len - codes.iterator().next().length();
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("(");
+		if (num == 0) {
+			codes.forEach(v -> sb.append(v).append("|"));
+		} else {
+			codes.forEach(v -> sb.append(v + "[0-9a-z]{" + num + "}").append("|"));
+		}
+		sb.delete(sb.length() - 1, sb.length());
+		sb.append(")");
 		return sb.toString();
 	}
 
@@ -67,26 +67,32 @@ public class RowRegexUtil {
 		int thou = tmin / 60;
 		int tday = thou / 24;
 		Calendar cdr = Calendar.getInstance();
-		if (tsec <= 30) {
-			dates = regexDate(from, to, sdf, Calendar.SECOND, STIConstants.SDF_SECOND, cdr, 30);
-		} else if (tmin <= 30) {
-			dates = regexDate(from, to, sdf, Calendar.MINUTE, STIConstants.SDF_MINUTE, cdr, 30);
-		} else if (thou <= 12) {
-			dates = regexDate(from, to, sdf, Calendar.HOUR_OF_DAY, STIConstants.SDF_HOUR, cdr, 12);
-		} else if (tday <= 15) {
-			dates = regexDate(from, to, sdf, Calendar.DAY_OF_MONTH, STIConstants.SDF_DAY, cdr, 15);
+		if (tsec <= 60) {
+			dates = regexDate(from, to, sdf, Calendar.SECOND, STIConstants.SDF_SECOND, cdr, 60);
+		} else if (tmin <= 60) {
+			dates = regexDate(from, to, sdf, Calendar.MINUTE, STIConstants.SDF_MINUTE, cdr, 60);
+		} else if (thou <= 24) {
+			dates = regexDate(from, to, sdf, Calendar.HOUR_OF_DAY, STIConstants.SDF_HOUR, cdr, 24);
+		} else if (tday <= 30) {
+			dates = regexDate(from, to, sdf, Calendar.DAY_OF_MONTH, STIConstants.SDF_DAY, cdr, 30);
 		} else {
 			dates = regexDate(from, to, sdf, Calendar.MONTH, STIConstants.SDF_MONTH, cdr, 12);
 		}
 
-		StringBuilder sb = new StringBuilder();
+		int length = dates.iterator().next().length();
+		if (dates.size() > EHConstants.LIMIT_ROWKEY_SIZE) {
+			dates = regexCodes(dates, length - 1);
+		}
 		int num = len - dates.iterator().next().length();
+
+		StringBuilder sb = new StringBuilder();
 		sb.append("(");
 		if (num == 0) {
 			dates.forEach(v -> sb.append(v).append("|"));
 		} else {
 			dates.forEach(v -> sb.append(v + "[0-9]{" + num + "}").append("|"));
 		}
+		// sb.append(sdf.format(STIConstants.defaultDate()));
 		sb.delete(sb.length() - 1, sb.length());
 		sb.append(")");
 		return sb.toString();

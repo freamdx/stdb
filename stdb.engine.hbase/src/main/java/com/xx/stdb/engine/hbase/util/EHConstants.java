@@ -33,7 +33,7 @@ public class EHConstants {
 	public static final boolean FID_BUFFERED = false; // rowkey contains fid
 
 	public static final int LIMIT_FILTER_DAYS = 365; // only 1 year
-	public static final int LIMIT_ROWKEY_SIZE = 12; // 12 grids or months
+	public static final int LIMIT_ROWKEY_SIZE = 12; // 12 grids
 
 	public static int LIMIT_SCAN_SIZE = 1024; // allow change size
 
@@ -47,15 +47,15 @@ public class EHConstants {
 	 * @return String
 	 */
 	public static String getRowKey(String code, String fid) {
-		return code + ":" + fid; // TODO new alg
+		return code + ":" + fid; // instead of new alg
 	}
 
 	public static String getFid(String rowKey) {
-		return rowKey.substring(rowKey.indexOf(":") + 1); // TODO new alg
+		return rowKey.substring(rowKey.indexOf(':') + 1);
 	}
 
 	public static String getSTCode(String rowKey) {
-		return rowKey.substring(0, rowKey.indexOf(":")); // TODO new alg
+		return rowKey.substring(0, rowKey.indexOf(':'));
 	}
 
 }
