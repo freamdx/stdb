@@ -32,13 +32,12 @@ public class RowRegexUtil {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("(");
-		if (num == 0) {
-			codes.forEach(v -> sb.append(v).append("|"));
-		} else {
-			codes.forEach(v -> sb.append(v + "[0-9a-z]{" + num + "}").append("|"));
-		}
+		codes.forEach(v -> sb.append(v).append("|"));
 		sb.delete(sb.length() - 1, sb.length());
 		sb.append(")");
+		if (num > 0) {
+			sb.append("[0-9a-z]{" + num + "}");
+		}
 		return sb.toString();
 	}
 
@@ -87,14 +86,14 @@ public class RowRegexUtil {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("(");
-		if (num == 0) {
-			dates.forEach(v -> sb.append(v).append("|"));
-		} else {
-			dates.forEach(v -> sb.append(v + "[0-9]{" + num + "}").append("|"));
-		}
-		// sb.append(sdf.format(STIConstants.defaultDate()));
+		dates.forEach(v -> sb.append(v).append("|"));
+		// sb.append(sdf.format(STIConstants.defaultDate()).substring(0, len -
+		// num));
 		sb.delete(sb.length() - 1, sb.length());
 		sb.append(")");
+		if (num > 0) {
+			sb.append("[0-9]{" + num + "}");
+		}
 		return sb.toString();
 	}
 

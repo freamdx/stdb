@@ -18,6 +18,7 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.locationtech.jts.geom.Envelope;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -126,6 +127,11 @@ public class HbaseDataSearcher implements IDataSearcher {
 		if (filter.getGeometry() == null || filter.getGeometry().isEmpty()) {
 			throw new IllegalArgumentException("filter.getGeometry is null or empty");
 		}
+		Envelope bbox = filter.getGeometry().getEnvelopeInternal();
+		if (bbox.getHeight() > EHConstants.LIMIT_RANGE_DEGREES || bbox.getWidth() > EHConstants.LIMIT_RANGE_DEGREES) {
+			throw new IllegalArgumentException("filter.getGeometry is out if range");
+		}
+
 		Date dateFrom = filter.getDateFrom();
 		Date dateTo = filter.getDateTo();
 		boolean nonNull = dateTo != null && dateFrom != null;

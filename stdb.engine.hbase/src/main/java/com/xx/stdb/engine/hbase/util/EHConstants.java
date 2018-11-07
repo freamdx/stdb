@@ -36,6 +36,7 @@ public class EHConstants {
 	public static final int LIMIT_ROWKEY_SIZE = 12; // 12 grids
 
 	public static int LIMIT_SCAN_SIZE = 1024; // allow change size
+	public static double LIMIT_RANGE_DEGREES = 0.5; // around 50 km
 
 	/**
 	 * hbase row key
