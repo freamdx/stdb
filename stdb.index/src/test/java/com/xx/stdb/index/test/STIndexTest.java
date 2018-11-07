@@ -1,7 +1,6 @@
 package com.xx.stdb.index.test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -81,8 +80,8 @@ public class STIndexTest {
 		stiIdxs.add(indexer);
 
 		// compare
-		Collections.sort(stiStrs, new STIndexer.STIComparator());
-		Collections.sort(stiIdxs, new STIndexer.STIndexComparator());
+		stiStrs.sort(new STIndexer.STIComparator());
+		stiIdxs.sort(new STIndexer.STIndexComparator());
 		System.out.println(stiStrs);
 		System.out.println(stiIdxs);
 	}

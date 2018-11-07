@@ -35,8 +35,8 @@ public class EHConstants {
 	public static final int LIMIT_FILTER_DAYS = 365; // only 1 year
 	public static final int LIMIT_ROWKEY_SIZE = 12; // 12 grids
 
-	public static int LIMIT_SCAN_SIZE = 1024; // allow change size
-	public static double LIMIT_RANGE_DEGREES = 0.5; // around 50 km
+	public static int LIMIT_SCAN_SIZE = 8192; // allow change size
+	public static double LIMIT_RANGE_DEGREES = 0.5; // around 50 KM
 
 	/**
 	 * hbase row key

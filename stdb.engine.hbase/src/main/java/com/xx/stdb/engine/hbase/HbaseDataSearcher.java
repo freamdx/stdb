@@ -46,8 +46,8 @@ public class HbaseDataSearcher implements IDataSearcher {
 		this.kryo = kryo;
 		this.schema = schema;
 
-		Collections.sort(this.collectionSTI, new STIndexer.STIComparator());
-		Collections.sort(indexers, new STIndexer.STIndexComparator());
+		this.collectionSTI.sort(new STIndexer.STIComparator());
+		this.indexers.sort(new STIndexer.STIndexComparator());
 	}
 
 	@Override
@@ -71,7 +71,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 	@Override
 	public List<Feature> multiGet(Set<String> fids) throws EngineException {
 		if (fids == null || fids.isEmpty()) {
-			throw new IllegalArgumentException("parameter list feature id is null");
+			throw new IllegalArgumentException("parameter fids is null");
 		}
 
 		List<Get> gets = new ArrayList<>(fids.size());
@@ -129,7 +129,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 		}
 		Envelope bbox = filter.getGeometry().getEnvelopeInternal();
 		if (bbox.getHeight() > EHConstants.LIMIT_RANGE_DEGREES || bbox.getWidth() > EHConstants.LIMIT_RANGE_DEGREES) {
-			throw new IllegalArgumentException("filter.getGeometry is out if range");
+			throw new IllegalArgumentException("filter.getGeometry is out of range");
 		}
 
 		Date dateFrom = filter.getDateFrom();
@@ -140,7 +140,7 @@ public class HbaseDataSearcher implements IDataSearcher {
 				throw new IllegalArgumentException("filter's dateTo is before dateFrom");
 			}
 			if (((dateTo.getTime() - dateFrom.getTime()) / 86400000) > EHConstants.LIMIT_FILTER_DAYS) {
-				throw new IllegalArgumentException("filter's date subtraction exceeded the default value");
+				throw new IllegalArgumentException("filter's date difference is out of range");
 			}
 		}
 		Set<Feature> fSet = new HashSet<>();
@@ -151,10 +151,11 @@ public class HbaseDataSearcher implements IDataSearcher {
 		SimpleDateFormat sdf = indexer.getPrecision().getDateFormat();
 		int defLen = sdf.format(STIConstants.defaultDate()).length();
 		Scan scan = buildScan(codes, filter.getFids(), dateFrom, dateTo, sdf);
+		Table table = null;
+		ResultScanner scanner = null;
 		try {
-			Table table = hbase.getTable(collectionSTI.get(idx));
-			ResultScanner scanner = table.getScanner(scan);
-
+			table = hbase.getTable(collectionSTI.get(idx));
+			scanner = table.getScanner(scan);
 			Result result;
 			Feature feature;
 			Date date;
@@ -180,10 +181,19 @@ public class HbaseDataSearcher implements IDataSearcher {
 					fSet.add(feature);
 				}
 			}
-			scanner.close();
-			table.close();
 		} catch (IOException e) {
 			throw new EngineException("spatio-temporal query error:", e);
+		} finally {
+			if (scanner != null) {
+				scanner.close();
+			}
+			if (table != null) {
+				try {
+					table.close();
+				} catch (IOException e) {
+					// TODO log
+				}
+			}
 		}
 		return fSet;
 	}
